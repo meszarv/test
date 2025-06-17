@@ -1,0 +1,16 @@
+{
+    "name": "pixeland",
+    "private": true,
+    "workspaces": [
+        "client",
+        "server"
+    ],
+    "devDependencies": {
+        "concurrently": "^9.0.0"
+    },
+    "scripts": {
+        "dev": "concurrently -k -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm:dev --workspace=server\" \"npm:dev --workspace=client\"",
+        "build": "npm run build --workspace=client",
+        "start": "npm run build && npm start --workspace=server"
+    }
+}
