@@ -14,6 +14,7 @@ function drawTile(ctx, tile, x, y, size) {
     ctx.fillStyle = tile.owner?.color || '#ddd';
     ctx.fillRect(x, y, size, size);
     ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1;
     ctx.strokeRect(x, y, size, size);
   }
 }
@@ -25,20 +26,34 @@ export default function PixelCanvas({ world, socket, myColor }) {
   const dragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
 
+  // Resize canvas to fill the viewport
+  useEffect(() => {
+    const canvas = ref.current;
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
+
   useEffect(() => {
     const canvas = ref.current;
     const ctx = canvas.getContext('2d');
 
-    canvas.width = world[0].length * TILE_PX;
-    canvas.height = world.length * TILE_PX;
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(scale, 0, 0, scale, offset.x, offset.y);
+    const rootSize = TILE_PX * scale;
 
     world.forEach((row, y) => {
       row.forEach((tile, x) => {
-        drawTile(ctx, tile, x * TILE_PX, y * TILE_PX, TILE_PX);
+        drawTile(
+          ctx,
+          tile,
+          offset.x + x * rootSize,
+          offset.y + y * rootSize,
+          rootSize,
+        );
       });
     });
   }, [world, scale, offset]);
@@ -103,7 +118,7 @@ export default function PixelCanvas({ world, socket, myColor }) {
       x: x - (x - prev.x) * factor,
       y: y - (y - prev.y) * factor,
     }));
-    setScale(prev => Math.max(0.2, Math.min(10, prev * factor)));
+    setScale(prev => Math.max(0.01, prev * factor));
   }
 
   return (
