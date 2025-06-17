@@ -23,20 +23,38 @@ export default function PixelCanvas({ world, socket, myColor }) {
   const ref = useRef(null);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  // remember the minimum zoom level so we can prevent zooming out past it
+  const minScale = useRef(1);
   const dragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
+  const [size, setSize] = useState({ width: 0, height: 0 });
 
-  // Resize canvas to fill the viewport
+  // Track the viewport size so we can resize and redraw the canvas
   useEffect(() => {
-    const canvas = ref.current;
     function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      setSize({ width: window.innerWidth, height: window.innerHeight });
     }
     resize();
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
   }, []);
+
+  // Apply the latest size to the canvas element
+  useEffect(() => {
+    const canvas = ref.current;
+    canvas.width = size.width;
+    canvas.height = size.height;
+  }, [size]);
+
+  // Fit world height to the viewport and record the minimum scale
+  useEffect(() => {
+    if (!world) return;
+    const scaleToFit = window.innerHeight / (world.length * TILE_PX);
+    minScale.current = scaleToFit;
+    const worldWidth = world[0].length * TILE_PX * scaleToFit;
+    setScale(scaleToFit);
+    setOffset({ x: (window.innerWidth - worldWidth) / 2, y: 0 });
+  }, [world]);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -56,7 +74,7 @@ export default function PixelCanvas({ world, socket, myColor }) {
         );
       });
     });
-  }, [world, scale, offset]);
+  }, [world, scale, offset, size]);
 
   function handleClick(e) {
     const rect = ref.current.getBoundingClientRect();
@@ -114,11 +132,14 @@ export default function PixelCanvas({ world, socket, myColor }) {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const factor = e.deltaY < 0 ? 1.1 : 0.9;
+
+    const newScale = Math.max(minScale.current, scale * factor);
+    const applied = newScale / scale;
     setOffset(prev => ({
-      x: x - (x - prev.x) * factor,
-      y: y - (y - prev.y) * factor,
+      x: x - (x - prev.x) * applied,
+      y: y - (y - prev.y) * applied,
     }));
-    setScale(prev => Math.max(0.01, prev * factor));
+    setScale(newScale);
   }
 
   return (
