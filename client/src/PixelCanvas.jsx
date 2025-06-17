@@ -27,7 +27,26 @@ export default function PixelCanvas({ world, socket, myColor }) {
   const minScale = useRef(1);
   const dragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
+  const initialized = useRef(false);
   const [size, setSize] = useState({ width: 0, height: 0 });
+
+  function clampOffset(x, y, s = scale) {
+    const worldWidth = world[0].length * TILE_PX * s;
+    const worldHeight = world.length * TILE_PX * s;
+
+    const centerX = (size.width - worldWidth) / 2;
+    const centerY = (size.height - worldHeight) / 2;
+
+    const minX = worldWidth > size.width ? size.width - worldWidth : centerX;
+    const maxX = worldWidth > size.width ? 0 : centerX;
+    const minY = worldHeight > size.height ? size.height - worldHeight : centerY;
+    const maxY = worldHeight > size.height ? 0 : centerY;
+
+    return {
+      x: Math.min(maxX, Math.max(minX, x)),
+      y: Math.min(maxY, Math.max(minY, y)),
+    };
+  }
 
   // Track the viewport size so we can resize and redraw the canvas
   useEffect(() => {
@@ -46,14 +65,21 @@ export default function PixelCanvas({ world, socket, myColor }) {
     canvas.height = size.height;
   }, [size]);
 
-  // Fit world height to the viewport and record the minimum scale
+  // Keep offset within bounds whenever size or scale changes
   useEffect(() => {
-    if (!world) return;
+    setOffset(prev => clampOffset(prev.x, prev.y));
+  }, [size, scale]);
+
+  // Fit world height to the viewport and record the minimum scale
+  // Run only on first world load so panning/zoom is preserved across updates
+  useEffect(() => {
+    if (!world || initialized.current) return;
     const scaleToFit = window.innerHeight / (world.length * TILE_PX);
     minScale.current = scaleToFit;
     const worldWidth = world[0].length * TILE_PX * scaleToFit;
     setScale(scaleToFit);
     setOffset({ x: (window.innerWidth - worldWidth) / 2, y: 0 });
+    initialized.current = true;
   }, [world]);
 
   useEffect(() => {
@@ -118,7 +144,7 @@ export default function PixelCanvas({ world, socket, myColor }) {
     if (!dragging.current) return;
     const dx = e.clientX - lastPos.current.x;
     const dy = e.clientY - lastPos.current.y;
-    setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+    setOffset(prev => clampOffset(prev.x + dx, prev.y + dy));
     lastPos.current = { x: e.clientX, y: e.clientY };
   }
 
@@ -135,10 +161,11 @@ export default function PixelCanvas({ world, socket, myColor }) {
 
     const newScale = Math.max(minScale.current, scale * factor);
     const applied = newScale / scale;
-    setOffset(prev => ({
-      x: x - (x - prev.x) * applied,
-      y: y - (y - prev.y) * applied,
-    }));
+    setOffset(prev => clampOffset(
+      x - (x - prev.x) * applied,
+      y - (y - prev.y) * applied,
+      newScale,
+    ));
     setScale(newScale);
   }
 
