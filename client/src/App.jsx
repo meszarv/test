@@ -16,13 +16,21 @@ function App() {
         let ref = next;
         for (let i = 0; i < path.length; i++) {
           const idx = path[i];
-          const side = i === 0 ? ref[0].length : 8;
-          const y = Math.floor(idx / side);
-          const x = idx % side;
-          if (i === path.length - 1) {
-            ref[y][x] = tile;
+          if (i === 0) {
+            const side = ref[0].length;
+            const y = Math.floor(idx / side);
+            const x = idx % side;
+            if (path.length === 1) {
+              ref[y][x] = tile;
+            } else {
+              ref = ref[y][x].children;
+            }
           } else {
-            ref = ref[y][x].children;
+            if (i === path.length - 1) {
+              ref[idx] = tile;
+            } else {
+              ref = ref[idx].children;
+            }
           }
         }
         return next;
