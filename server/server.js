@@ -83,5 +83,5 @@ io.on('connection', socket => {
 });
 
 server.listen(3000, () =>
-  console.log(`🌍  Pixeland server running on :3000  (${isProd ? 'prod' : 'dev'})`),
+  console.log(`🌍  Pixeland server running on :3000  (${isProd ? 'prod' : 'dev'})`)
 );
