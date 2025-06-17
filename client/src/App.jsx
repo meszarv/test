@@ -33,9 +33,7 @@ function App() {
   if (!world) return <p className="p-4 text-center">Loading world…</p>;
 
   return (
-    <div className="flex justify-center p-4">
-      <PixelCanvas world={world} socket={socket} myColor={myColor} />
-    </div>
+    <PixelCanvas world={world} socket={socket} myColor={myColor} />
   );
 }
 
