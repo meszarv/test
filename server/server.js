@@ -27,7 +27,23 @@ function createWorld() {
 
 const world = createWorld();
 
-// (getTile, subdivide – unchanged, left out for brevity)
+function getTile(path) {
+  if (!Array.isArray(path) || path.length === 0) return null;
+  let idx = path[0];
+  let tile = world[Math.floor(idx / WORLD_W)][idx % WORLD_W];
+  for (let i = 1; i < path.length; i++) {
+    if (!tile.children) return null;
+    tile = tile.children[path[i]];
+  }
+  return tile;
+}
+
+function subdivide(tile) {
+  tile.children = Array.from({ length: SUBDIV * SUBDIV }, () =>
+    new Tile(tile.level + 1),
+  );
+  tile.claims = 0;
+}
 
 // ─── networking + static files ─────────────────────────────────────────────
 const app    = express();
@@ -46,7 +62,24 @@ if (isProd) {
 }
 
 io.on('connection', socket => {
-  /* …exact same Socket.IO logic as before… */
+  socket.emit('init', { world });
+
+  socket.on('click', ({ path, color }) => {
+    const tile = getTile(path);
+    if (!tile) return;
+
+    if (tile.owner && tile.owner.id === socket.id) {
+      tile.owner.color = color;
+    } else {
+      tile.claims++;
+      if (tile.claims >= CLAIMS_TO_OWN) {
+        tile.owner = { id: socket.id, color };
+        subdivide(tile);
+      }
+    }
+
+    io.emit('update', { path, tile });
+  });
 });
 
 server.listen(3000, () =>
