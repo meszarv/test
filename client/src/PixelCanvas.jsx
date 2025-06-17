@@ -52,7 +52,7 @@ export default function PixelCanvas({ world, socket, myColor }) {
     let tiles = world;
     let size = TILE_PX;
     while (true) {
-      const side = tiles[0].length; // 80 for root, 8 for children, …
+      const side = tiles[0].length; // root width (8) or 8 for children
       const tx = Math.floor(x / size);
       const ty = Math.floor(y / size);
       const idx = ty * side + tx;
