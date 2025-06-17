@@ -16,7 +16,7 @@ function App() {
         let ref = next;
         for (let i = 0; i < path.length; i++) {
           const idx = path[i];
-          const side = i === 0 ? 80 : 8;
+          const side = i === 0 ? ref[0].length : 8;
           const y = Math.floor(idx / side);
           const x = idx % side;
           if (i === path.length - 1) {

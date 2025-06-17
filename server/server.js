@@ -4,9 +4,9 @@ const http    = require('http');
 const path    = require('path');
 const { Server } = require('socket.io');
 
-const WORLD_W = 80;
-const WORLD_H = 60;
-const CLAIMS_TO_OWN = 100;
+const WORLD_W = 8;
+const WORLD_H = 6;
+const CLAIMS_TO_OWN = 3;
 const SUBDIV = 8;
 
 // ─── data model ────────────────────────────────────────────────────────────
