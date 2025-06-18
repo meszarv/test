@@ -103,11 +103,21 @@ function drawTile(ctx, tile, grid, gx, gy, x, y, size, myId, parentOwnerId = nul
   const neighborOwnerId = line => line ? (line.owner?.id || parentOwnerId) : parentOwnerId;
   const needOutline = line => isMine && neighborOwnerId(line) !== ownerId;
 
+  // to avoid double-drawing borders we only render the top/left sides for
+  // interior edges. Bottom and right edges are handled by the neighboring tiles
+  // except at world boundaries where no neighbor exists.
+  const shouldDraw = {
+    top: true,
+    left: true,
+    right: gx === width - 1,
+    bottom: gy === height - 1,
+  };
+
   const drawGreen = {
-    top: needOutline(neighbors.top),
-    right: needOutline(neighbors.right),
-    bottom: needOutline(neighbors.bottom),
-    left: needOutline(neighbors.left),
+    top: shouldDraw.top && needOutline(neighbors.top),
+    right: shouldDraw.right && needOutline(neighbors.right),
+    bottom: shouldDraw.bottom && needOutline(neighbors.bottom),
+    left: shouldDraw.left && needOutline(neighbors.left),
   };
 
   // draw default grey borders, skipping sides with green outline
@@ -115,22 +125,22 @@ function drawTile(ctx, tile, grid, gx, gy, x, y, size, myId, parentOwnerId = nul
   ctx.lineWidth = 1;
   ctx.beginPath();
   let drewGrey = false;
-  if (!drawGreen.top) {
+  if (shouldDraw.top && !drawGreen.top) {
     ctx.moveTo(x, y);
     ctx.lineTo(x + size, y);
     drewGrey = true;
   }
-  if (!drawGreen.right) {
+  if (shouldDraw.right && !drawGreen.right) {
     ctx.moveTo(x + size, y);
     ctx.lineTo(x + size, y + size);
     drewGrey = true;
   }
-  if (!drawGreen.bottom) {
+  if (shouldDraw.bottom && !drawGreen.bottom) {
     ctx.moveTo(x + size, y + size);
     ctx.lineTo(x, y + size);
     drewGrey = true;
   }
-  if (!drawGreen.left) {
+  if (shouldDraw.left && !drawGreen.left) {
     ctx.moveTo(x, y + size);
     ctx.lineTo(x, y);
     drewGrey = true;
