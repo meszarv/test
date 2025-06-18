@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { computeOwnedBorders } from './utils/ownedBorders.js';
 
 const TILE_PX = 10; // top-level tile rendered 10×10 CSS pixels
 const CLAIMS_TO_OWN = 3;
@@ -133,12 +134,7 @@ function drawTileLines(ctx, tile, grid, gx, gy, x, y, size, myId, showGrid, show
     bottom: gy === height - 1,
   };
 
-  const drawGreen = {
-    top: showOwnedBorders && shouldDraw.top && needOutline(neighbors.top),
-    right: showOwnedBorders && shouldDraw.right && needOutline(neighbors.right),
-    bottom: showOwnedBorders && shouldDraw.bottom && needOutline(neighbors.bottom),
-    left: showOwnedBorders && shouldDraw.left && needOutline(neighbors.left),
-  };
+  const drawGreen = computeOwnedBorders(tile, grid, gx, gy, myId, showOwnedBorders, parentOwnerId);
 
   if (showGrid) {
     ctx.strokeStyle = '#666';
