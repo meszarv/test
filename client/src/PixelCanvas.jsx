@@ -1,22 +1,135 @@
 import { useRef, useEffect, useState } from 'react';
 
-const TILE_PX = 10; // top‑level tile rendered 10×10 CSS pixels
+const TILE_PX = 10; // top-level tile rendered 10×10 CSS pixels
+const CLAIMS_TO_OWN = 3;
 
-function drawTile(ctx, tile, x, y, size) {
+function drawProgress(ctx, x, y, size, progress) {
+  const seg = progress * 4; // 4 sides
+  let p = seg;
+  ctx.strokeStyle = 'orange';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+
+  // top
+  if (p <= 1) {
+    ctx.lineTo(x + size * p, y);
+    ctx.stroke();
+    return;
+  }
+  ctx.lineTo(x + size, y);
+  p -= 1;
+
+  // right
+  if (p <= 1) {
+    ctx.lineTo(x + size, y + size * p);
+    ctx.stroke();
+    return;
+  }
+  ctx.lineTo(x + size, y + size);
+  p -= 1;
+
+  // bottom
+  if (p <= 1) {
+    ctx.lineTo(x + size - size * p, y + size);
+    ctx.stroke();
+    return;
+  }
+  ctx.lineTo(x, y + size);
+  p -= 1;
+
+  // left
+  if (p <= 1) {
+    ctx.lineTo(x, y + size - size * p);
+    ctx.stroke();
+    return;
+  }
+  ctx.lineTo(x, y);
+  ctx.stroke();
+}
+
+function gridify(children) {
+  return children.reduce((rows, t, i) => {
+    const r = Math.floor(i / 8);
+    if (!rows[r]) rows[r] = [];
+    rows[r].push(t);
+    return rows;
+  }, []);
+}
+
+function drawTile(ctx, tile, grid, gx, gy, x, y, size, myId, parentOwnerId = null) {
   if (tile.children) {
     const childSize = size / 8;
+    const childGrid = gridify(tile.children);
     tile.children.forEach((child, i) => {
       const cx = i % 8;
       const cy = Math.floor(i / 8);
-      drawTile(ctx, child, x + cx * childSize, y + cy * childSize, childSize);
+      drawTile(
+        ctx,
+        child,
+        childGrid,
+        cx,
+        cy,
+        x + cx * childSize,
+        y + cy * childSize,
+        childSize,
+        myId,
+        tile.owner?.id || parentOwnerId,
+      );
     });
   } else {
-    ctx.fillStyle = tile.owner?.color || '#ddd';
+    ctx.fillStyle = tile.owner?.color || (tile.level > 0 ? '#fff' : '#ddd');
     ctx.fillRect(x, y, size, size);
     ctx.strokeStyle = '#666';
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, size, size);
   }
+
+  if (!tile.owner && tile.claims > 0 && !tile.children) {
+    drawProgress(ctx, x, y, size, tile.claims / CLAIMS_TO_OWN);
+  }
+
+  const isMine = tile.owner && tile.owner.id === myId;
+  const width = grid[0].length;
+  const height = grid.length;
+  const neighbors = {
+    top: gy > 0 ? grid[gy - 1][gx] : null,
+    right: gx < width - 1 ? grid[gy][gx + 1] : null,
+    bottom: gy < height - 1 ? grid[gy + 1][gx] : null,
+    left: gx > 0 ? grid[gy][gx - 1] : null,
+  };
+
+  const needOutline = line => {
+    if (isMine) return !line || line.owner?.id !== myId;
+    if (parentOwnerId === myId) return true;
+    return false;
+  };
+
+  ctx.strokeStyle = 'green';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  let drew = false;
+  if (needOutline(neighbors.top)) {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + size, y);
+    drew = true;
+  }
+  if (needOutline(neighbors.right)) {
+    ctx.moveTo(x + size, y);
+    ctx.lineTo(x + size, y + size);
+    drew = true;
+  }
+  if (needOutline(neighbors.bottom)) {
+    ctx.moveTo(x + size, y + size);
+    ctx.lineTo(x, y + size);
+    drew = true;
+  }
+  if (needOutline(neighbors.left)) {
+    ctx.moveTo(x, y + size);
+    ctx.lineTo(x, y);
+    drew = true;
+  }
+  if (drew) ctx.stroke();
 }
 
 export default function PixelCanvas({ world, socket, myColor }) {
@@ -88,19 +201,24 @@ export default function PixelCanvas({ world, socket, myColor }) {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const rootSize = TILE_PX * scale;
+    const myId = socket.id;
 
     world.forEach((row, y) => {
       row.forEach((tile, x) => {
         drawTile(
           ctx,
           tile,
+          world,
+          x,
+          y,
           offset.x + x * rootSize,
           offset.y + y * rootSize,
           rootSize,
+          myId,
         );
       });
     });
-  }, [world, scale, offset, size]);
+  }, [world, scale, offset, size, socket.id]);
 
   function handleClick(e) {
     const rect = ref.current.getBoundingClientRect();
@@ -124,12 +242,7 @@ export default function PixelCanvas({ world, socket, myColor }) {
       x = x % size;
       y = y % size;
       size = size / 8;
-      tiles = tile.children.reduce((rows, t, i) => {
-        const r = Math.floor(i / 8);
-        if (!rows[r]) rows[r] = [];
-        rows[r].push(t);
-        return rows;
-      }, []);
+      tiles = gridify(tile.children);
     }
 
     socket.emit('click', { path, color: myColor });
