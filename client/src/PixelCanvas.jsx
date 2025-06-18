@@ -58,6 +58,8 @@ function gridify(children) {
 }
 
 function drawTile(ctx, tile, grid, gx, gy, x, y, size, myId, parentOwnerId = null) {
+  const isOwnedByMe = tile.owner?.id === myId;
+
   if (tile.children) {
     const childSize = size / 8;
     const childGrid = gridify(tile.children);
@@ -78,11 +80,8 @@ function drawTile(ctx, tile, grid, gx, gy, x, y, size, myId, parentOwnerId = nul
       );
     });
   } else {
-    ctx.fillStyle = tile.owner?.color || (tile.level > 0 ? '#fff' : '#ddd');
+    ctx.fillStyle = isOwnedByMe ? tile.owner.color : '#ccc';
     ctx.fillRect(x, y, size, size);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, size, size);
   }
 
   if (!tile.owner && tile.claims > 0 && !tile.children) {
@@ -104,32 +103,60 @@ function drawTile(ctx, tile, grid, gx, gy, x, y, size, myId, parentOwnerId = nul
   const neighborOwnerId = line => line ? (line.owner?.id || parentOwnerId) : parentOwnerId;
   const needOutline = line => isMine && neighborOwnerId(line) !== ownerId;
 
+  const drawGreen = {
+    top: needOutline(neighbors.top),
+    right: needOutline(neighbors.right),
+    bottom: needOutline(neighbors.bottom),
+    left: needOutline(neighbors.left),
+  };
 
-  ctx.strokeStyle = 'green';
-  ctx.lineWidth = 2;
+  // draw default grey borders, skipping sides with green outline
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  let drew = false;
-  if (needOutline(neighbors.top)) {
+  let drewGrey = false;
+  if (!drawGreen.top) {
     ctx.moveTo(x, y);
     ctx.lineTo(x + size, y);
-    drew = true;
+    drewGrey = true;
   }
-  if (needOutline(neighbors.right)) {
+  if (!drawGreen.right) {
     ctx.moveTo(x + size, y);
     ctx.lineTo(x + size, y + size);
-    drew = true;
+    drewGrey = true;
   }
-  if (needOutline(neighbors.bottom)) {
+  if (!drawGreen.bottom) {
     ctx.moveTo(x + size, y + size);
     ctx.lineTo(x, y + size);
-    drew = true;
+    drewGrey = true;
   }
-  if (needOutline(neighbors.left)) {
+  if (!drawGreen.left) {
     ctx.moveTo(x, y + size);
     ctx.lineTo(x, y);
-    drew = true;
+    drewGrey = true;
   }
-  if (drew) ctx.stroke();
+  if (drewGrey) ctx.stroke();
+
+  // helper to draw glowing green side
+  const glow = (fromX, fromY, toX, toY, offX, offY) => {
+    ctx.save();
+    ctx.strokeStyle = 'green';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'green';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = offX;
+    ctx.shadowOffsetY = offY;
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  if (drawGreen.top) glow(x, y, x + size, y, 0, -2);
+  if (drawGreen.right) glow(x + size, y, x + size, y + size, 2, 0);
+  if (drawGreen.bottom) glow(x + size, y + size, x, y + size, 0, 2);
+  if (drawGreen.left) glow(x, y + size, x, y, -2, 0);
 }
 
 export default function PixelCanvas({ world, socket, myColor }) {
