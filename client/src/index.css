@@ -13,3 +13,17 @@ canvas {
   height: 100vh;
   display: block;
 }
+
+.toolbar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.toolbar label {
+  display: block;
+}
