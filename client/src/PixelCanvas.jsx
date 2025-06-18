@@ -89,7 +89,9 @@ function drawTile(ctx, tile, grid, gx, gy, x, y, size, myId, parentOwnerId = nul
     drawProgress(ctx, x, y, size, tile.claims / CLAIMS_TO_OWN);
   }
 
-  const isMine = tile.owner && tile.owner.id === myId;
+  const ownerId = tile.owner?.id || parentOwnerId;
+  const isMine = ownerId === myId;
+
   const width = grid[0].length;
   const height = grid.length;
   const neighbors = {
@@ -99,11 +101,9 @@ function drawTile(ctx, tile, grid, gx, gy, x, y, size, myId, parentOwnerId = nul
     left: gx > 0 ? grid[gy][gx - 1] : null,
   };
 
-  const needOutline = line => {
-    if (isMine) return !line || line.owner?.id !== myId;
-    if (parentOwnerId === myId) return true;
-    return false;
-  };
+  const neighborOwnerId = line => line ? (line.owner?.id || parentOwnerId) : parentOwnerId;
+  const needOutline = line => isMine && neighborOwnerId(line) !== ownerId;
+
 
   ctx.strokeStyle = 'green';
   ctx.lineWidth = 2;
