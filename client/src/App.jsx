@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import PixelCanvas from './PixelCanvas';
+import Toolbar from './Toolbar';
 
 const socket = io('http://localhost:3000');
 
 function App() {
   const [world, setWorld] = useState(null);
   const [myColor] = useState(() => `hsl(${Math.random()*360},70%,50%)`);
+  const [showGrid, setShowGrid] = useState(true);
+  const [showBorders, setShowBorders] = useState(true);
 
   useEffect(() => {
     socket.on('init', data => setWorld(data.world));
@@ -41,7 +44,21 @@ function App() {
   if (!world) return <p className="p-4 text-center">Loading world…</p>;
 
   return (
-    <PixelCanvas world={world} socket={socket} myColor={myColor} />
+    <>
+      <Toolbar
+        showGrid={showGrid}
+        toggleGrid={() => setShowGrid(prev => !prev)}
+        showBorders={showBorders}
+        toggleBorders={() => setShowBorders(prev => !prev)}
+      />
+      <PixelCanvas
+        world={world}
+        socket={socket}
+        myColor={myColor}
+        showGrid={showGrid}
+        showOwnedBorders={showBorders}
+      />
+    </>
   );
 }
 
