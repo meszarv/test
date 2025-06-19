@@ -86,8 +86,31 @@ function drawTilePixels(ctx, tile, x, y, size, myId, parentOwnerId = null) {
   }
 }
 
-function drawTileLines(ctx, tile, grid, gx, gy, x, y, size, myId, showGrid, showOwnedBorders, parentOwnerId = null) {
+function drawTileLines(
+  ctx,
+  tile,
+  grid,
+  gx,
+  gy,
+  x,
+  y,
+  size,
+  myId,
+  showGrid,
+  showOwnedBorders,
+  parentOwnerId = null,
+  parentNeighbors = {},
+) {
   if (!showGrid && !showOwnedBorders) return;
+
+  const width = grid[0].length;
+  const height = grid.length;
+  const neighbors = {
+    top: gy > 0 ? grid[gy - 1][gx] : null,
+    right: gx < width - 1 ? grid[gy][gx + 1] : null,
+    bottom: gy < height - 1 ? grid[gy + 1][gx] : null,
+    left: gx > 0 ? grid[gy][gx - 1] : null,
+  };
 
   if (tile.children) {
     const childSize = size / 8;
@@ -108,24 +131,13 @@ function drawTileLines(ctx, tile, grid, gx, gy, x, y, size, myId, showGrid, show
         showGrid,
         showOwnedBorders,
         tile.owner?.id || parentOwnerId,
+        neighbors,
       );
     });
   }
 
   const ownerId = tile.owner?.id || parentOwnerId;
   const isMine = ownerId === myId;
-
-  const width = grid[0].length;
-  const height = grid.length;
-  const neighbors = {
-    top: gy > 0 ? grid[gy - 1][gx] : null,
-    right: gx < width - 1 ? grid[gy][gx + 1] : null,
-    bottom: gy < height - 1 ? grid[gy + 1][gx] : null,
-    left: gx > 0 ? grid[gy][gx - 1] : null,
-  };
-
-  const neighborOwnerId = line => line ? (line.owner?.id || parentOwnerId) : parentOwnerId;
-  const needOutline = line => isMine && neighborOwnerId(line) !== ownerId;
 
   const shouldDraw = {
     top: true,
@@ -134,29 +146,29 @@ function drawTileLines(ctx, tile, grid, gx, gy, x, y, size, myId, showGrid, show
     bottom: gy === height - 1,
   };
 
-  const drawGreen = computeOwnedBorders(tile, grid, gx, gy, myId, showOwnedBorders, parentOwnerId);
+  const drawGreen = computeOwnedBorders(tile, grid, gx, gy, myId, showOwnedBorders, parentOwnerId, parentNeighbors);
 
   if (showGrid) {
     ctx.strokeStyle = '#666';
     ctx.lineWidth = 1;
     ctx.beginPath();
     let drewGrey = false;
-    if (shouldDraw.top && !drawGreen.top) {
+    if (shouldDraw.top && drawGreen.top.length === 0) {
       ctx.moveTo(x, y);
       ctx.lineTo(x + size, y);
       drewGrey = true;
     }
-    if (shouldDraw.right && !drawGreen.right) {
+    if (shouldDraw.right && drawGreen.right.length === 0) {
       ctx.moveTo(x + size, y);
       ctx.lineTo(x + size, y + size);
       drewGrey = true;
     }
-    if (shouldDraw.bottom && !drawGreen.bottom) {
+    if (shouldDraw.bottom && drawGreen.bottom.length === 0) {
       ctx.moveTo(x + size, y + size);
       ctx.lineTo(x, y + size);
       drewGrey = true;
     }
-    if (shouldDraw.left && !drawGreen.left) {
+    if (shouldDraw.left && drawGreen.left.length === 0) {
       ctx.moveTo(x, y + size);
       ctx.lineTo(x, y);
       drewGrey = true;
@@ -179,10 +191,14 @@ function drawTileLines(ctx, tile, grid, gx, gy, x, y, size, myId, showGrid, show
     ctx.restore();
   };
 
-  if (drawGreen.top) glow(x, y, x + size, y, 0, -2);
-  if (drawGreen.right) glow(x + size, y, x + size, y + size, 2, 0);
-  if (drawGreen.bottom) glow(x + size, y + size, x, y + size, 0, 2);
-  if (drawGreen.left) glow(x, y + size, x, y, -2, 0);
+  drawGreen.top.forEach(([s, e]) =>
+    glow(x + s * size, y, x + e * size, y, 0, -2));
+  drawGreen.right.forEach(([s, e]) =>
+    glow(x + size, y + s * size, x + size, y + e * size, 2, 0));
+  drawGreen.bottom.forEach(([s, e]) =>
+    glow(x + e * size, y + size, x + s * size, y + size, 0, 2));
+  drawGreen.left.forEach(([s, e]) =>
+    glow(x, y + e * size, x, y + s * size, -2, 0));
 }
 
 export default function PixelCanvas({ world, socket, myColor, showGrid, showOwnedBorders }) {
