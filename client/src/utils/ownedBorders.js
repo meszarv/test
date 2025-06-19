@@ -33,6 +33,16 @@ export function computeOwnedBorders(
     if (!neighbor) {
       neighbor = parentNeighbors[dir];
       neighborOwner = ownerOf(neighbor, parentOwnerId);
+      if (neighbor && neighbor.children) {
+        let idx;
+        if (dir === 'top') idx = (SUBDIV - 1) * SUBDIV + gx;
+        if (dir === 'bottom') idx = gx;
+        if (dir === 'left') idx = gy * SUBDIV + (SUBDIV - 1);
+        if (dir === 'right') idx = gy * SUBDIV;
+        const child = neighbor.children[idx];
+        const childOwner = ownerOf(child, neighborOwner);
+        return childOwner !== ownerId ? [[0, 1]] : [];
+      }
       if (parentOwnerId === ownerId) return [];
       return neighborOwner !== ownerId ? [[0, 1]] : [];
     }
