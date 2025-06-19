@@ -87,4 +87,62 @@ function grid(rows) {
   assert.deepStrictEqual(resChild.top, []);
 })();
 
+(function testCousinDifferentLevelDifferentOwners() {
+  const leftParent = makeTile('otherA');
+  leftParent.children = Array.from({ length: 64 }, () => makeTile(null));
+  const boundaryChild = makeTile('otherA');
+  leftParent.children[7] = boundaryChild; // top-right child
+  boundaryChild.children = Array.from({ length: 64 }, () => makeTile(null));
+  const grand = makeTile('me');
+  boundaryChild.children[7] = grand; // top-right grandchild
+
+  const rightParent = makeTile('otherB');
+  const grandRows = Array.from({ length: 8 }, (_, y) =>
+    Array.from({ length: 8 }, (_, x) => boundaryChild.children[y * 8 + x]));
+
+  const res = computeOwnedBorders(grand, grandRows, 7, 0, 'me', true, 'otherA', { right: rightParent });
+  const full = [[0, 1]];
+  assert.deepStrictEqual(res.right, full);
+})();
+
+(function testCousinDifferentLevelSameOwner() {
+  const leftParent = makeTile('me');
+  leftParent.children = Array.from({ length: 64 }, () => makeTile(null));
+  const boundaryChild = makeTile('me');
+  leftParent.children[7] = boundaryChild; // top-right child
+  boundaryChild.children = Array.from({ length: 64 }, () => makeTile(null));
+  const grand = makeTile('me');
+  boundaryChild.children[7] = grand; // top-right grandchild
+
+  const rightParent = makeTile('me');
+  const grandRows = Array.from({ length: 8 }, (_, y) =>
+    Array.from({ length: 8 }, (_, x) => boundaryChild.children[y * 8 + x]));
+
+  const res = computeOwnedBorders(grand, grandRows, 7, 0, 'me', true, 'me', { right: rightParent });
+  assert.deepStrictEqual(res.right, []);
+})();
+
+(function testAdjacentParentsChildrenSameOwner() {
+  const leftParent = makeTile('otherA');
+  leftParent.children = Array.from({ length: 64 }, () => makeTile(null));
+  const leftChild = makeTile('me');
+  leftParent.children[7] = leftChild; // top-right child
+
+  const rightParent = makeTile('otherB');
+  rightParent.children = Array.from({ length: 64 }, () => makeTile(null));
+  const rightChild = makeTile('me');
+  rightParent.children[0] = rightChild; // top-left child
+
+  const leftRows = Array.from({ length: 8 }, (_, y) =>
+    Array.from({ length: 8 }, (_, x) => leftParent.children[y * 8 + x]));
+  const rightRows = Array.from({ length: 8 }, (_, y) =>
+    Array.from({ length: 8 }, (_, x) => rightParent.children[y * 8 + x]));
+
+  const resLeft = computeOwnedBorders(leftChild, leftRows, 7, 0, 'me', true, 'otherA', { right: rightParent });
+  assert.deepStrictEqual(resLeft.right, []);
+
+  const resRight = computeOwnedBorders(rightChild, rightRows, 0, 0, 'me', true, 'otherB', { left: leftParent });
+  assert.deepStrictEqual(resRight.left, []);
+})();
+
 console.log('owned border tests passed');
