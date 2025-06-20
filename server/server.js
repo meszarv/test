@@ -41,7 +41,7 @@ function createWorld() {
   );
 }
 
-const world = createWorld();
+let world = createWorld();
 
 function getTile(path) {
   if (!Array.isArray(path) || path.length === 0) return null;
@@ -96,6 +96,11 @@ io.on('connection', socket => {
     }
 
     io.emit('update', { path, tile });
+  });
+
+  socket.on('reset', () => {
+    world = createWorld();
+    io.emit('init', { world });
   });
 });
 

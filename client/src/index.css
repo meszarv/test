@@ -27,3 +27,8 @@ canvas {
 .toolbar label {
   display: block;
 }
+
+.toolbar button {
+  margin-top: 4px;
+  width: 100%;
+}
