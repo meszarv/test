@@ -118,6 +118,19 @@ function drawTileLines(
     tile.children.forEach((child, i) => {
       const cx = i % 8;
       const cy = Math.floor(i / 8);
+      const childParentNeighbors = {};
+      ['top', 'right', 'bottom', 'left'].forEach(side => {
+        let n = neighbors[side] || parentNeighbors[side] || null;
+        if (!neighbors[side] && parentNeighbors[side] && parentNeighbors[side].children) {
+          let idx;
+          if (side === 'top') idx = 7 * 8 + cx;
+          if (side === 'bottom') idx = cx;
+          if (side === 'left') idx = cy * 8 + 7;
+          if (side === 'right') idx = cy * 8;
+          n = parentNeighbors[side].children[idx];
+        }
+        childParentNeighbors[side] = n;
+      });
       drawTileLines(
         ctx,
         child,
@@ -131,7 +144,7 @@ function drawTileLines(
         showGrid,
         showOwnedBorders,
         tile.owner?.id || parentOwnerId,
-        neighbors,
+        childParentNeighbors,
       );
     });
   }
