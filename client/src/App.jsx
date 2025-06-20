@@ -11,6 +11,10 @@ function App() {
   const [showGrid, setShowGrid] = useState(true);
   const [showBorders, setShowBorders] = useState(true);
 
+  function handleReset() {
+    socket.emit('reset');
+  }
+
   useEffect(() => {
     socket.on('init', data => setWorld(data.world));
     socket.on('update', ({ path, tile }) => {
@@ -50,6 +54,7 @@ function App() {
         toggleGrid={() => setShowGrid(prev => !prev)}
         showBorders={showBorders}
         toggleBorders={() => setShowBorders(prev => !prev)}
+        resetPixels={handleReset}
       />
       <PixelCanvas
         world={world}
