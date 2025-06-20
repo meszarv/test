@@ -146,6 +146,35 @@ function grid(rows) {
   assert.deepStrictEqual(resRight.left, []);
 })();
 
+(function testDeepNeighborsSameOwner() {
+  const leftRoot = makeTile('otherA');
+  leftRoot.children = Array.from({ length: 64 }, () => makeTile(null));
+  const leftParent = makeTile('otherA');
+  leftRoot.children[7] = leftParent; // H1
+  leftParent.children = Array.from({ length: 64 }, () => makeTile(null));
+  const leftGrand = makeTile('me');
+  leftParent.children[7] = leftGrand; // H1/H1
+
+  const rightRoot = makeTile('otherB');
+  rightRoot.children = Array.from({ length: 64 }, () => makeTile(null));
+  const rightParent = makeTile('otherB');
+  rightRoot.children[0] = rightParent; // A1
+  rightParent.children = Array.from({ length: 64 }, () => makeTile(null));
+  const rightGrand = makeTile('me');
+  rightParent.children[0] = rightGrand; // A1/A1
+
+  const leftGrandRows = Array.from({ length: 8 }, (_, y) =>
+    Array.from({ length: 8 }, (_, x) => leftParent.children[y * 8 + x]));
+  const rightGrandRows = Array.from({ length: 8 }, (_, y) =>
+    Array.from({ length: 8 }, (_, x) => rightParent.children[y * 8 + x]));
+
+  const resLeft = computeOwnedBorders(leftGrand, leftGrandRows, 7, 0, 'me', true, 'otherA', { right: rightParent });
+  assert.deepStrictEqual(resLeft.right, []);
+
+  const resRight = computeOwnedBorders(rightGrand, rightGrandRows, 0, 0, 'me', true, 'otherB', { left: leftParent });
+  assert.deepStrictEqual(resRight.left, []);
+})();
+
 (function testGridHelpers() {
   const { grid, refs } = parseGrid(`
     A.
