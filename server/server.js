@@ -9,6 +9,22 @@ const WORLD_H = 6;
 const CLAIMS_TO_OWN = 3;
 const SUBDIV = 8;
 
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function address(x, y) {
+  return LETTERS[x] + String(y + 1);
+}
+function addressForPath(path) {
+  const parts = [];
+  for (let level = 0; level < path.length; level++) {
+    const idx = path[level];
+    const width = level === 0 ? WORLD_W : SUBDIV;
+    const x = idx % width;
+    const y = Math.floor(idx / width);
+    parts.push(address(x, y));
+  }
+  return parts.join('/');
+}
+
 // ─── data model ────────────────────────────────────────────────────────────
 class Tile {
   constructor(level, owner = null) {
@@ -74,6 +90,7 @@ io.on('connection', socket => {
       tile.claims++;
       if (tile.claims >= CLAIMS_TO_OWN) {
         tile.owner = { id: socket.id, color };
+        console.log(`claimed ${addressForPath(path)}`);
         subdivide(tile);
       }
     }

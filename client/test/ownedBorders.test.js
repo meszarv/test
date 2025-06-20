@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { computeOwnedBorders } from '../src/utils/ownedBorders.js';
+import { parseGrid, address, addressForPath } from './gridUtils.js';
 
 function makeTile(id) {
   return { owner: id ? { id, color: '#' + id } : null, children: null };
@@ -143,6 +144,17 @@ function grid(rows) {
 
   const resRight = computeOwnedBorders(rightChild, rightRows, 0, 0, 'me', true, 'otherB', { left: leftParent });
   assert.deepStrictEqual(resRight.left, []);
+})();
+
+(function testGridHelpers() {
+  const { grid, refs } = parseGrid(`
+    A.
+    .B
+  `);
+  assert.strictEqual(address(refs.A.x, refs.A.y), 'A1');
+  assert.strictEqual(address(refs.B.x, refs.B.y), 'B2');
+  const path = [refs.B.y * 8 + refs.B.x];
+  assert.strictEqual(addressForPath(path), 'B2');
 })();
 
 console.log('owned border tests passed');
