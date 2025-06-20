@@ -12,6 +12,6 @@
         "dev": "concurrently -k -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm:dev --workspace=server\" \"npm:dev --workspace=client\"",
         "build": "npm run build --workspace=client",
         "start": "npm run build && npm start --workspace=server",
-        "test": "node client/test/ownedBorders.test.js"
+        "test": "node client/test/ownedBorders.test.js && node client/test/gridLines.test.js"
     }
 }
