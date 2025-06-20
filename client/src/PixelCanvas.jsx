@@ -177,7 +177,6 @@ function collectTileLines(
         depth + 1,
       );
     });
-    return;
   }
 
   const drawGreen = computeOwnedBorders(tile, grid, gx, gy, myId, showOwnedBorders, parentOwnerId, parentNeighbors);
