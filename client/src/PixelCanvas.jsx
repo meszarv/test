@@ -192,7 +192,6 @@ function collectTileLines(
     if (!showGrid || drawGreen[side].length > 0) return false;
     const n = neighbor || parentNeighbors[side] || null;
     if (!n) return true;
-    if (n.children) return false;
     if (tile.level < n.level) return true;
     if (tile.level > n.level) return false;
     return side === 'top' || side === 'left';
